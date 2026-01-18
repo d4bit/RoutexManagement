@@ -1,0 +1,238 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { db, Cliente, Matricula, Repostaje, sql } from 'astro:db';
+
+// PUNTO 2: Estadísticas en tiempo real
+const totalClientes = await db.select({ count: sql`count(*)` }).from(Cliente);
+const totalMatriculas = await db.select({ count: sql`count(*)` }).from(Matricula);
+const totalRepostajes = await db.select({ count: sql`count(*)` }).from(Repostaje);
+
+const stats = [
+{ label: 'Clientes', value: totalClientes[0].count, icon: '👥' },
+{ label: 'Vehículos', value: totalMatriculas[0].count, icon: '🚗' },
+{ label: 'Repostajes', value: totalRepostajes[0].count, icon: '⛽' },
+];
+
+const tables = [
+{ id: 'all', name: 'Todas las tablas' },
+{ id: 'Cliente', name: 'Clientes' },
+{ id: 'Matricula', name: 'Matrículas' },
+{ id: 'Repostaje', name: 'Repostajes' },
+];
+---
+
+<DashboardLayout title="Administración de Datos">
+<div id="db-data" 
+	data-json={JSON.stringify({
+	Cliente: await db.select().from(Cliente),
+	Matricula: await db.select().from(Matricula),
+	Repostaje: await db.select().from(Repostaje),
+	})} 
+	hidden>
+</div>
+
+<div class="space-y-8">
+	
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+	{stats.map(stat => (
+		<div class="bg-surface p-6 rounded-2xl border border-brand-light flex items-center gap-4 shadow-sm">
+		<span class="text-3xl">{stat.icon}</span>
+		<div>
+			<p class="text-sm text-brand-dark/60 font-medium">{stat.label}</p>
+			<p class="text-2xl font-bold text-brand-deep">{stat.value}</p>
+		</div>
+		</div>
+	))}
+	</div>
+
+	<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+	<section class="bg-surface p-8 rounded-3xl border border-brand-light shadow-sm flex flex-col">
+		<div class="flex items-center gap-3 mb-6">
+		<span class="text-3xl">📥</span>
+		<h3 class="text-xl font-bold text-brand-deep">Importar Backup</h3>
+		</div>
+		
+		<div id="drop-zone" class="flex-1 border-2 border-dashed border-brand-light rounded-2xl p-8 flex flex-col items-center justify-center hover:border-brand transition-all cursor-pointer group bg-gray-50/30">
+		<span class="text-4xl mb-2 group-hover:scale-110 transition-transform">📄</span>
+		<p id="file-name" class="text-sm font-medium text-brand-dark text-center">Arrastra tu .sql aquí</p>
+		<input type="file" class="hidden" id="importFile" accept=".sql" />
+		</div>
+
+		<div id="validation-box" class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl hidden">
+		<p class="text-xs font-bold text-blue-700 uppercase mb-1">Análisis del archivo:</p>
+		<p id="validation-msg" class="text-sm text-blue-600 italic">Analizando sentencias...</p>
+		</div>
+		
+		<button id="btn-import-execute" type="button" class="w-full mt-4 py-4 bg-brand text-white font-bold rounded-xl shadow-lg hover:bg-brand-deep transition-all">
+		Ejecutar Importación
+		</button>
+	</section>
+
+	<section class="bg-surface p-8 rounded-3xl border border-brand-light shadow-sm">
+		<div class="flex items-center gap-3 mb-6">
+		<span class="text-3xl">📤</span>
+		<h3 class="text-xl font-bold text-brand-deep">Exportar Datos</h3>
+		</div>
+
+		<div class="space-y-6">
+		<div>
+			<label class="block text-sm font-bold text-brand-dark mb-3">1. ¿Qué quieres descargar?</label>
+			<div class="grid grid-cols-2 gap-2">
+			{tables.map((table) => (
+				<label class="flex items-center gap-2 p-3 border border-brand-light rounded-xl cursor-pointer hover:bg-brand-light transition-all">
+				<input type="radio" name="tableSelect" value={table.id} class="table-radio accent-brand" checked={table.id === 'all'} />
+				<span class="text-xs font-bold text-brand-dark">{table.name}</span>
+				</label>
+			))}
+			</div>
+		</div>
+
+		<div class="flex gap-4" id="format-selector">
+			<button type="button" data-format="xlsx" class="format-btn flex-1 py-4 border-2 border-brand rounded-xl text-sm font-bold bg-brand text-white shadow-md shadow-brand/20 transition-all">EXCEL</button>
+			<button type="button" data-format="sql" class="format-btn flex-1 py-4 border-2 border-brand-light rounded-xl text-sm font-bold text-brand-dark hover:border-brand transition-all">SQL</button>
+		</div>
+
+		<button id="btn-export" type="button" class="w-full py-4 bg-brand-deep text-white font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all">
+			Generar Descarga
+		</button>
+		</div>
+	</section>
+	</div>
+
+	<section class="bg-surface p-8 rounded-3xl border border-brand-light shadow-sm">
+	<h3 class="text-lg font-bold text-brand-deep mb-4 flex items-center gap-2">
+		<span>🕒</span> Historial de actividad
+	</h3>
+	<div class="overflow-hidden rounded-xl border border-brand-light">
+		<table class="w-full text-left text-sm">
+		<thead class="bg-gray-50 border-b border-brand-light text-brand-dark/60">
+			<tr>
+			<th class="px-6 py-3 font-bold">Fecha</th>
+			<th class="px-6 py-3 font-bold">Acción</th>
+			<th class="px-6 py-3 font-bold">Formato</th>
+			<th class="px-6 py-3 font-bold text-right">Estado</th>
+			</tr>
+		</thead>
+		<tbody id="history-body">
+			<tr id="no-activity-row" class="border-b border-brand-light/50 last:border-none">
+			<td colspan="4" class="px-6 py-4 text-center text-brand-dark/40 italic">No hay actividad reciente</td>
+			</tr>
+		</tbody>
+		</table>
+	</div>
+	</section>
+
+	</div>
+</DashboardLayout>
+
+<script>
+import * as XLSX from 'xlsx';
+
+function initAdmin() {
+	const exportBtn = document.getElementById('btn-export');
+	const fileInput = document.getElementById('importFile') as HTMLInputElement;
+	const dropZone = document.getElementById('drop-zone');
+	const fileNameDisplay = document.getElementById('file-name');
+	const validationBox = document.getElementById('validation-box');
+	const validationMsg = document.getElementById('validation-msg');
+	const historyBody = document.getElementById('history-body');
+	const noActivityRow = document.getElementById('no-activity-row');
+
+	if (!exportBtn) return;
+
+	// --- PUNTO 1: Logs locales ---
+	const addLog = (action, format) => {
+	if (noActivityRow) noActivityRow.classList.add('hidden');
+	const now = new Date().toLocaleString();
+	const newRow = document.createElement('tr');
+	newRow.className = "border-b border-brand-light/50 last:border-none bg-white";
+	newRow.innerHTML = `
+		<td class="px-6 py-4 font-medium text-brand-dark">${now}</td>
+		<td class="px-6 py-4">${action}</td>
+		<td class="px-6 py-4"><span class="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold">${format}</span></td>
+		<td class="px-6 py-4 text-right"><span class="text-green-600 font-bold">✓ Éxito</span></td>
+	`;
+	historyBody?.prepend(newRow);
+	};
+
+	// --- PUNTO 3: Lógica de borrado comentada ---
+	/*
+	const dangerBtn = document.getElementById('btn-danger-zone');
+	dangerBtn?.addEventListener('click', () => {
+	const pass = prompt("Introduce contraseña:");
+	if (pass === "ADMIN123") {
+		alert("Borrado ejecutado");
+	}
+	});
+	*/
+
+	// --- PUNTO 4: Validación de SQL ---
+	fileInput?.addEventListener('change', async () => {
+	const file = fileInput.files?.[0];
+	if (file) {
+		fileNameDisplay!.textContent = file.name;
+		validationBox?.classList.remove('hidden');
+		const text = await file.text();
+		const matches = (text.match(/INSERT INTO/g) || []).length;
+		validationMsg!.textContent = `Se han detectado ${matches} registros para importar en este archivo SQL.`;
+	}
+	});
+
+	// --- EXPORTACIÓN ---
+	exportBtn.addEventListener('click', () => {
+	const dataContainer = document.getElementById('db-data');
+	const allData = JSON.parse(dataContainer?.getAttribute('data-json') || '{}');
+	const tableKey = (document.querySelector('input[name="tableSelect"]:checked') as HTMLInputElement).value;
+	const format = (document.querySelector('.format-btn.bg-brand') as HTMLElement).dataset.format;
+
+	if (format === 'sql') {
+		exportToSQL(allData, tableKey);
+	} else {
+		exportToExcel(allData, tableKey);
+	}
+	addLog("Exportación", format.toUpperCase());
+	});
+
+	function exportToSQL(allData, tableKey) {
+	let sqlText = `-- Routex Dump\n`;
+	const tables = tableKey === 'all' ? Object.keys(allData) : [tableKey];
+	tables.forEach(t => {
+		allData[t].forEach(row => {
+		const cols = Object.keys(row).join(", ");
+		const vals = Object.values(row).map(v => typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v).join(", ");
+		sqlText += `INSERT INTO ${t} (${cols}) VALUES (${vals});\n`;
+		});
+	});
+	const blob = new Blob([sqlText], { type: 'text/sql' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a'); a.href = url; a.download = 'backup.sql'; a.click();
+	}
+
+	function exportToExcel(allData, tableKey) {
+	const wb = XLSX.utils.book_new();
+	const tables = tableKey === 'all' ? Object.keys(allData) : [tableKey];
+	tables.forEach(t => {
+		XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allData[t]), t);
+	});
+	XLSX.writeFile(wb, `routex_export.xlsx`);
+	}
+
+	// --- SELECCIÓN VISUAL FORMATOS ---
+	const formatButtons = document.querySelectorAll('.format-btn');
+	formatButtons.forEach(btn => {
+	btn.addEventListener('click', () => {
+		formatButtons.forEach(b => {
+		b.classList.remove('bg-brand', 'text-white', 'border-brand', 'shadow-md', 'shadow-brand/20');
+		b.classList.add('border-brand-light', 'text-brand-dark');
+		});
+		btn.classList.remove('border-brand-light', 'text-brand-dark');
+		btn.classList.add('bg-brand', 'text-white', 'border-brand', 'shadow-md', 'shadow-brand/20');
+	});
+	});
+
+	dropZone?.addEventListener('click', () => fileInput?.click());
+}
+
+initAdmin();
+document.addEventListener('astro:after-navigation', initAdmin);
+</script>
