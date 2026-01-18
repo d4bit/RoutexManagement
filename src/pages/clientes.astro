@@ -1,0 +1,17 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { db, Cliente } from 'astro:db';
+
+const clientes = await db.select().from(Cliente);
+---
+
+<DashboardLayout title="Inicio">
+  <div class="grid gap-4">
+    {clientes.map(cliente => (
+      <div class="p-4 border border-brand-light rounded-xl bg-surface shadow-sm">
+        <h3 class="font-bold text-brand-deep">{cliente.nombre}</h3>
+        <p class="text-sm text-brand-dark/60">{cliente.observaciones}</p>
+      </div>
+    ))}
+  </div>
+</DashboardLayout>

@@ -10,6 +10,11 @@
   },
   "dependencies": {
     "@astrojs/db": "^0.18.3",
-    "astro": "^5.16.11"
+    "@lucide/astro": "^0.562.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "astro": "^5.16.11",
+    "lucide-astro": "^0.556.0",
+    "tailwindcss": "^4.1.18",
+    "xlsx": "^0.18.5"
   }
 }

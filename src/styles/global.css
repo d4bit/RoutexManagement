@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  /* Definimos nuestra marca personal basada en verdes */
+  --color-brand-light: var(--color-green-100);   /* Para fondos de tarjetas */
+  --color-brand: var(--color-green-500);         /* El color principal */
+  --color-brand-dark: var(--color-green-700);    /* Para hover y bordes */
+  --color-brand-deep: var(--color-green-950);   /* Para texto muy oscuro */
+
+  /* También puedes definir colores funcionales */
+  --color-success: var(--color-emerald-500);
+  --color-surface: #f0fdf4; /* Un blanco verdoso muy sutil */
+}

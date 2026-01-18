@@ -1,0 +1,80 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+
+const { title } = Astro.props;
+const pathname = new URL(Astro.url).pathname;
+
+// Mapeamos los nombres a emojis
+const menuItems = [
+  { name: 'Inicio', href: '/', icon: '🏠' },
+  { name: 'Consultas', href: '/consultas', icon: '🔍' },
+  { name: 'Repostajes', href: '/repostajes', icon: '⛽' },
+  { name: 'Clientes', href: '/clientes', icon: '👥' },
+  { name: 'Matrículas', href: '/matriculas', icon: '🚗' },
+  { name: 'Importar/Exportar', href: '/transfer', icon: '🔄' },
+];
+
+const currentPage = menuItems.find(item => item.name === title);
+const PageEmoji = currentPage?.icon || '📍';
+---
+
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title} | Routex</title>
+    <ClientRouter />
+</head>
+<body class="bg-white flex h-screen overflow-hidden">
+    <aside class="w-64 bg-surface border-r border-brand-light flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-brand-light">
+            <span class="text-2xl">🛤️</span>
+            <h1 class="text-xl font-black text-brand-deep tracking-tight">ROUTEX</h1>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1">
+        {menuItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            
+            return (
+                <a
+                href={item.href}
+                class={`flex items-center gap-3 px-4 py-3 font-medium rounded-xl transition-all ${
+                    isActive 
+                    ? 'bg-brand text-white shadow-md shadow-brand/20' 
+                    : 'text-brand-dark hover:bg-brand-light hover:text-brand'
+                }`}
+                >
+                <span class="text-xl">{item.icon}</span>
+                <span>{item.name}</span>
+                </a>
+            )
+        })}
+        </nav>
+
+        <div class="p-4 border-t border-brand-light">
+            <div class="flex items-center gap-2 text-xs text-brand-dark/60 font-medium px-4 italic">
+                <span>by David Román | v1.0.0</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <header class="mb-10 flex items-center gap-4">
+            <div class="p-3 bg-brand-light rounded-2xl text-3xl shadow-sm">
+                {PageEmoji}
+            </div>
+            
+            <div>
+                <h2 class="text-3xl font-bold text-brand-deep leading-none">{title}</h2>
+                <p class="text-brand-dark/60 text-sm mt-1">Gestión de {title.toLowerCase()} en el sistema</p>
+            </div>
+        </header>
+        
+        <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <slot />
+        </div>
+    </main>
+</body>
+</html>
