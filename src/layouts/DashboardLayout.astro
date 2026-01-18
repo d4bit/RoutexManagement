@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
-
+import logoAsset from '../assets/icon.svg';
 const { title } = Astro.props;
 const pathname = new URL(Astro.url).pathname;
 
@@ -16,20 +16,26 @@ const menuItems = [
 ];
 
 const currentPage = menuItems.find(item => item.name === title);
-const PageEmoji = currentPage?.icon || '📍';
+const PageEmoji = currentPage?.icon || '👥';
 ---
 
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href={logoAsset.src} />
     <title>{title} | Routex</title>
     <ClientRouter />
 </head>
 <body class="bg-white flex h-screen overflow-hidden">
     <aside class="w-64 bg-surface border-r border-brand-light flex flex-col">
         <div class="p-6 flex items-center gap-3 border-b border-brand-light">
-            <span class="text-2xl">🛤️</span>
+            <img 
+                src={logoAsset.src} 
+                alt="Routex Logo" 
+                class="object-contain" 
+                width="50" 
+            />
             <h1 class="text-xl font-black text-brand-deep tracking-tight">ROUTEX</h1>
         </div>
 

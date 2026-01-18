@@ -1,0 +1,74 @@
+---
+const { clientes } = Astro.props;
+---
+<dialog id="edit-mat-modal" class="modal-fixed rounded-[2.5rem] p-0 border-2 border-brand-light shadow-2xl w-full max-w-lg outline-none overflow-hidden">
+    <div class="bg-white">
+        <div class="bg-brand p-8 text-white flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                    ✏️
+                </div>
+                <div>
+                    <h2 class="text-xl font-black uppercase tracking-tight leading-none">Editar Matrícula</h2>
+                    <p class="text-white/60 text-[10px] font-bold uppercase mt-1 tracking-widest">Actualizar información de flota</p>
+                </div>
+            </div>
+            <button 
+                onclick="this.closest('dialog').close()" 
+                class="bg-white/10 hover:bg-white/20 w-10 h-10 rounded-full transition-all flex items-center justify-center font-bold"
+            >
+                ✕
+            </button>
+        </div>
+
+        <form id="edit-mat-form" class="p-10 space-y-6">
+            <input type="hidden" name="id" id="edit-mat-id" />
+            
+            <div class="space-y-2">
+                <label class="block text-[10px] font-black text-brand uppercase ml-1 tracking-wider">Número de Matrícula</label>
+                <input 
+                    type="text" 
+                    name="numero" 
+                    id="edit-mat-numero"
+                    placeholder="Ej: 1234BBB"
+                    class="w-full p-4 bg-brand/5 border-2 border-brand/10 rounded-2xl outline-none focus:border-brand transition-all font-bold text-brand-deep uppercase placeholder:opacity-20"
+                    required
+                />
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-[10px] font-black text-brand uppercase ml-1 tracking-wider">Asignar a Cliente</label>
+                <div class="relative">
+                    <input 
+                        list="edit-mat-clientes-list" 
+                        name="clienteNombre" 
+                        id="edit-mat-cliente"
+                        placeholder="Buscar cliente..."
+                        class="w-full p-4 bg-brand/5 border-2 border-brand/10 rounded-2xl outline-none focus:border-brand transition-all font-bold text-brand-deep placeholder:opacity-20"
+                        required
+                        autocomplete="off"
+                    />
+                    <datalist id="edit-mat-clientes-list">
+                        {clientes.map((c) => (
+                            <option value={c.nombre} />
+                        ))}
+                    </datalist>
+                </div>
+            </div>
+
+            <button 
+                type="submit" 
+                class="w-full bg-brand text-white p-5 rounded-2xl font-black hover:bg-brand-deep transition-all shadow-lg shadow-brand/20 uppercase text-xs tracking-widest mt-4"
+            >
+                Guardar Cambios
+            </button>
+        </form>
+    </div>
+</dialog>
+
+<style>
+    /* Aseguramos que el datalist no rompa el diseño del input */
+    input::-webkit-calendar-picker-indicator {
+        display: none !important;
+    }
+</style>

@@ -1,13 +1,69 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
+import MatriculaForm from '../components/MatriculaForm.astro';
+import MatriculaTable from '../components/MatriculaTable.astro';
+
+// Componentes Auxiliares (Modales) - Asegúrate de que la ruta sea correcta
+import MatriculaEditModal from '../components/MatriculaEditModal.astro';
+import MatriculaDeleteModal from '../components/MatriculaDeleteModal.astro';
+import ClientDetailsModal from '../components/ClientDetailsModal.astro';
+
+// Base de Datos
+import { db, Cliente, Matricula, eq, desc } from 'astro:db';
+
+// 1. Datos para selectores y filtros
+const clientes = await db.select().from(Cliente).orderBy(Cliente.nombre);
+
+// 2. Datos para la tabla con el JOIN de cliente
+const matriculasConCliente = await db
+    .select({
+        id: Matricula.id,
+        numero: Matricula.numero,
+        clienteId: Matricula.clienteId,
+        clienteNombre: Cliente.nombre
+    })
+    .from(Matricula)
+    .innerJoin(Cliente, eq(Matricula.clienteId, Cliente.id))
+    .orderBy(desc(Matricula.id));
 ---
 
 <DashboardLayout title="Matrículas">
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-	<div class="bg-surface p-6 rounded-2xl border border-brand-light">
-	<p class="text-brand-dark font-bold">Último repostaje</p>
-	<p class="text-4xl font-bold text-brand mt-2">45.20L</p>
-	<p class="text-sm text-brand-deep/60">Matrícula: 1234-BBB</p>
-	</div>
-</div>
+    <div class="space-y-8">
+        <section class="animate-in fade-in slide-in-from-top-4 duration-500">
+            <MatriculaForm clientes={clientes} />
+        </section>
+
+        <section class="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <header class="flex items-center justify-between mb-4 px-2">
+                <div>
+                    <h3 class="text-lg font-black text-brand-deep uppercase tracking-tighter">Inventario de Flota</h3>
+                    <p class="text-[10px] font-bold text-brand-dark/40 uppercase tracking-widest">
+                        Total de unidades registradas: {matriculasConCliente.length}
+                    </p>
+                </div>
+            </header>
+            
+            <MatriculaTable matriculas={matriculasConCliente} />
+        </section>
+    </div>
+
+    <MatriculaEditModal clientes={clientes} />
+    <MatriculaDeleteModal />
+    <ClientDetailsModal />
 </DashboardLayout>
+
+<style is:global>
+    .modal-fixed {
+        position: fixed;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        margin: 0;
+        border: none;
+    }
+
+    dialog::backdrop {
+        background: rgba(10, 25, 47, 0.7);
+        backdrop-filter: blur(8px);
+    }
+</style>

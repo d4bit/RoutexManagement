@@ -2,40 +2,64 @@
 interface Props {
     initialClients: any[];
 }
+
 const { initialClients } = Astro.props;
 ---
 
-<section class="bg-surface rounded-3xl border border-brand-light shadow-sm overflow-hidden">
-    <div class="p-6 border-b border-brand-light flex flex-col md:flex-row justify-between items-center gap-4">
+<section class="bg-white border-2 border-brand rounded-3xl shadow-md shadow-brand/5 overflow-hidden">
+
+    <!-- Controles -->
+    <div class="p-6 border-b border-brand/10 flex flex-col md:flex-row gap-6 justify-between items-end">
+
+        <!-- Tamaño de página -->
         <div class="flex items-center gap-3">
-            <label class="text-sm font-medium text-brand-dark/60">Mostrar:</label>
-            <select id="page-size" class="bg-gray-50 border border-brand-light rounded-lg px-3 py-1 text-sm font-bold text-brand-deep outline-none focus:border-brand">
+            <label class="text-[11px] uppercase font-black tracking-widest text-brand">
+                Mostrar
+            </label>
+            <select
+                id="page-size"
+                class="bg-brand/5 border-2 border-brand/10 rounded-xl px-4 py-2
+                       text-sm font-bold text-brand-deep
+                       outline-none focus:border-brand focus:bg-white transition-all"
+            >
                 <option value="10">10</option>
                 <option value="50">50</option>
                 <option value="all">Todo</option>
             </select>
         </div>
+
+        <!-- Buscador -->
         <div class="relative w-full md:w-64">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-dark/40">🔍</span>
-            <input 
-                type="text" 
-                id="search-input" 
-                placeholder="Buscar cliente..." 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-brand-light rounded-xl text-sm outline-none focus:border-brand transition-all" 
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-brand/40">
+                🔍
+            </span>
+            <input
+                type="text"
+                id="search-input"
+                placeholder="Buscar cliente…"
+                class="w-full pl-11 pr-4 py-3 bg-brand/5 border-2 border-brand/10
+                       rounded-2xl text-sm text-brand-deep
+                       outline-none focus:border-brand focus:bg-white transition-all"
             />
         </div>
     </div>
 
+    <!-- Tabla -->
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full border-collapse">
             <thead>
-                <tr class="bg-gray-50/50 text-[11px] uppercase tracking-wider text-brand-dark/50 font-bold">
-                    <th class="px-6 py-4">Nombre del Cliente</th>
-                    <th class="px-6 py-4">Observaciones</th>
+                <tr class="bg-brand/5 text-[11px] uppercase tracking-widest text-brand font-black">
+                    <th class="px-6 py-4 text-left">Cliente</th>
+                    <th class="px-6 py-4 text-left">Observaciones</th>
                     <th class="px-6 py-4 text-right">Acciones</th>
                 </tr>
             </thead>
-            <tbody id="table-body" data-clients={JSON.stringify(initialClients)}></tbody>
+
+            <tbody
+                id="table-body"
+                data-clients={JSON.stringify(initialClients)}
+                class="divide-y divide-brand/10"
+            ></tbody>
         </table>
     </div>
 </section>
@@ -43,9 +67,9 @@ const { initialClients } = Astro.props;
 <script>
     const setupTable = () => {
         const body = document.getElementById('table-body');
-        const search = document.getElementById('search-input') as HTMLInputElement;
-        const size = document.getElementById('page-size') as HTMLSelectElement;
-        
+        const search = document.getElementById('search-input');
+        const size = document.getElementById('page-size');
+
         if (!body || !search || !size) return;
 
         const rawData = body.getAttribute('data-clients');
@@ -53,31 +77,41 @@ const { initialClients } = Astro.props;
 
         const render = () => {
             const term = search.value.toLowerCase();
-            const limit = size.value === 'all' ? clients.length : parseInt(size.value);
-            const filtered = clients.filter((c: any) => 
+            const limit = size.value === 'all'
+                ? clients.length
+                : parseInt(size.value);
+
+            const filtered = clients.filter(c =>
                 c.nombre.toLowerCase().includes(term)
             );
 
-            body.innerHTML = filtered.slice(0, limit).map((c: any) => `
-                <tr class="border-b border-brand-light/50 hover:bg-brand-light/5 transition-colors group">
+            body.innerHTML = filtered.slice(0, limit).map(c => `
+                <tr class="hover:bg-brand/5 transition-colors group">
                     <td class="px-6 py-4 font-bold">
-                        <button 
-                            class="view-info-btn text-brand hover:text-brand-deep hover:underline transition-all text-left"
+                        <button
+                            class="text-brand hover:text-brand-deep hover:underline transition-all text-left"
                             data-client='${JSON.stringify(c)}'
                         >
                             ${c.nombre}
                         </button>
                     </td>
-                    <td class="px-6 py-4 text-sm text-brand-dark/70 italic">${c.observaciones || ''}</td>
-                    <td class="px-6 py-4 text-right flex justify-end gap-2">
-                        <button 
-                            class="edit-btn p-2 rounded-lg text-brand hover:bg-brand/10 transition-all border border-brand/20 bg-white"
+
+                    <td class="px-6 py-4 text-sm text-brand-dark/70 italic">
+                        ${c.observaciones || '—'}
+                    </td>
+
+                    <td class="px-6 py-4 flex justify-end gap-2">
+                        <button
+                            class="edit-btn p-2 rounded-xl border-2 border-brand/20 bg-white
+                                   text-brand hover:bg-brand/10 transition-all"
                             data-client='${JSON.stringify(c)}'
                         >
                             ✏️
                         </button>
-                        <button 
-                            class="del-btn p-2 rounded-lg text-red-500 hover:bg-red-50 transition-all border border-red-100 bg-white"
+
+                        <button
+                            class="del-btn p-2 rounded-xl border-2 border-red-200 bg-white
+                                   text-red-500 hover:bg-red-50 transition-all"
                             data-id="${c.id}"
                             data-nombre="${c.nombre}"
                         >
@@ -87,29 +121,31 @@ const { initialClients } = Astro.props;
                 </tr>
             `).join('');
 
-            // Evento 1: Ver Ficha (Click en nombre)
-            body.querySelectorAll('.view-info-btn').forEach(btn => {
-                (btn as HTMLElement).onclick = () => {
-                    const client = JSON.parse((btn as HTMLElement).dataset.client!);
-                    window.dispatchEvent(new CustomEvent('open-info-modal', { detail: client }));
+            body.querySelectorAll('[data-client]').forEach(btn => {
+                btn.onclick = () => {
+                    const client = JSON.parse(btn.dataset.client);
+
+                    if (btn.classList.contains('edit-btn')) {
+                        window.dispatchEvent(
+                            new CustomEvent('open-edit-modal', { detail: client })
+                        );
+                    } else {
+                        window.dispatchEvent(
+                            new CustomEvent('open-info-modal', { detail: client })
+                        );
+                    }
                 };
             });
 
-            // Evento 2: Editar (Botón lápiz)
-            body.querySelectorAll('.edit-btn').forEach(btn => {
-                (btn as HTMLElement).onclick = () => {
-                    const client = JSON.parse((btn as HTMLElement).dataset.client!);
-                    window.dispatchEvent(new CustomEvent('open-edit-modal', { detail: client }));
-                };
-            });
-
-            // Evento 3: Borrar (Corregido para usar el Modal personalizado)
             body.querySelectorAll('.del-btn').forEach(btn => {
-                (btn as HTMLElement).onclick = () => {
-                    const { id, nombre } = (btn as HTMLElement).dataset;
-                    window.dispatchEvent(new CustomEvent('open-delete-modal', { 
-                        detail: { id, nombre } 
-                    }));
+                btn.onclick = () => {
+                    const { id, nombre } = btn.dataset;
+
+                    window.dispatchEvent(
+                        new CustomEvent('open-delete-modal', {
+                            detail: { id, nombre }
+                        })
+                    );
                 };
             });
         };

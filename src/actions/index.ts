@@ -1,16 +1,20 @@
-import { db, Cliente, Matricula, eq, sql } from 'astro:db';
+import { db, Cliente, Matricula, Repostaje, eq, sql, sum } from 'astro:db';
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 
 export const server = {
+    /** * ==========================================
+     * SECCIÓN: CLIENTES
+     * ==========================================
+     */
+
+    // Obtener estadísticas detalladas para el modal de información
     getClientStats: defineAction({
         input: z.object({ id: z.number() }),
         handler: async ({ id }) => {
-            // 1. Datos básicos y matrículas
             const cliente = await db.select().from(Cliente).where(eq(Cliente.id, id)).get();
             const matriculas = await db.select().from(Matricula).where(eq(Matricula.clienteId, id));
 
-            // 2. Agregados totales (Litros e Importe)
             const stats = await db.select({
                 totalLitros: sum(Repostaje.cantidad),
                 totalImporte: sum(Repostaje.importe),
@@ -20,7 +24,6 @@ export const server = {
             .where(eq(Repostaje.clienteId, id))
             .get();
 
-            // 3. Último repostaje
             const ultimo = await db.select()
                 .from(Repostaje)
                 .where(eq(Repostaje.clienteId, id))
@@ -28,7 +31,6 @@ export const server = {
                 .limit(1)
                 .get();
 
-            // 4. Eficiencia por matrícula (Top vehículos que más gastan)
             const eficiencia = await db.select({
                 numero: Matricula.numero,
                 total: sum(Repostaje.importe)
@@ -36,8 +38,8 @@ export const server = {
             .from(Repostaje)
             .innerJoin(Matricula, eq(Repostaje.matriculaId, Matricula.id))
             .where(eq(Repostaje.clienteId, id))
-            .groupBy(Matricula.numero)
-            .limit(3);
+                .groupBy(Matricula.numero)
+                .limit(3);
 
             return {
                 nombre: cliente?.nombre,
@@ -52,6 +54,7 @@ export const server = {
         }
     }),
 
+    // Crear o Editar Cliente
     upsertClient: defineAction({
         accept: 'form',
         input: z.object({
@@ -71,6 +74,7 @@ export const server = {
         },
     }),
 
+    // Borrar Cliente
     deleteClient: defineAction({
         accept: 'json',
         input: z.object({ id: z.number() }),
@@ -80,45 +84,51 @@ export const server = {
         },
     }),
 
+    /** * ==========================================
+     * SECCIÓN: MATRÍCULAS
+     * ==========================================
+     */
+
+    // Crear o Editar Matrícula (Incluye búsqueda de ID por Nombre de Cliente)
     upsertMatricula: defineAction({
         accept: 'form',
         input: z.object({
-            id: z.string().optional(),
+            id: z.string().optional(), // Presente si editamos, vacío si creamos
             numero: z.string(),
             clienteNombre: z.string(),
         }),
         handler: async ({ id, numero, clienteNombre }) => {
-            // 1. Limpiamos el nombre (quitamos espacios al principio y final)
             const nombreLimpio = clienteNombre.trim();
 
-            // 2. Buscamos al cliente (Usamos LOWER para que no falle por mayúsculas)
+            // Buscamos el ID del cliente basado en el nombre del select/datalist
             const cliente = await db.select()
                 .from(Cliente)
                 .where(sql`LOWER(${Cliente.nombre}) = LOWER(${nombreLimpio})`)
                 .get();
 
             if (!cliente) {
-                console.error(`Error: Cliente "${nombreLimpio}" no encontrado en la DB.`);
-                throw new Error("El cliente seleccionado no existe en nuestra base de datos.");
+                throw new Error(`El cliente "${nombreLimpio}" no existe.`);
             }
 
+            const data = {
+                numero: numero.trim().toUpperCase(),
+                clienteId: cliente.id
+            };
+
             if (id && id !== "") {
+                // OPERACIÓN: EDITAR
                 await db.update(Matricula)
-                    .set({
-                        numero: numero.trim().toUpperCase(),
-                        clienteId: cliente.id
-                    })
+                    .set(data)
                     .where(eq(Matricula.id, Number(id)));
             } else {
-                await db.insert(Matricula).values({
-                    numero: numero.trim().toUpperCase(),
-                    clienteId: cliente.id
-                });
+                // OPERACIÓN: CREAR
+                await db.insert(Matricula).values(data);
             }
             return { success: true };
         },
     }),
 
+    // Borrar Matrícula
     deleteMatricula: defineAction({
         accept: 'json',
         input: z.object({ id: z.number() }),
@@ -127,5 +137,4 @@ export const server = {
             return { success: true };
         },
     }),
-    
 };
