@@ -13,7 +13,7 @@ const Cliente = defineTable({
 const Matricula = defineTable({
   columns: {
     id: column.number({ primaryKey: true }),
-    placa: column.text({ unique: true }), // La matrícula debe ser única
+    numero: column.text({ unique: true }), // La matrícula debe ser única
     clienteId: column.number({ references: () => Cliente.columns.id }),
   }
 });

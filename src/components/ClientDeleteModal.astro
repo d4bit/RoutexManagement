@@ -1,0 +1,41 @@
+---
+---
+<dialog id="delete-modal" class="modal-fixed rounded-3xl p-0 border-2 border-red-500 shadow-2xl w-full max-w-sm outline-none overflow-hidden">
+    <div class="bg-white p-8 relative">
+        <button 
+            onclick="this.closest('dialog').close()" 
+            class="absolute top-5 right-5 text-brand-dark/20 hover:text-red-500 transition-all text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"
+        >
+            ✕
+        </button>
+
+        <div class="flex flex-col items-center text-center">
+            <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-inner mt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            
+            <h3 class="text-2xl font-black text-brand-deep mb-3 tracking-tight">¿Confirmar borrado?</h3>
+            <p class="text-sm text-brand-dark/60 leading-relaxed mb-8 px-4">
+                Estás eliminando a <span id="delete-client-name" class="font-bold text-red-600 bg-red-50 px-2 rounded"></span> de forma permanente.
+            </p>
+            
+            <div class="flex flex-col gap-3 w-full">
+                <button 
+                    id="confirm-delete-btn" 
+                    class="w-full py-4 bg-red-500 text-white rounded-2xl font-black hover:bg-red-600 shadow-xl shadow-red-200 transition-all uppercase text-xs tracking-widest"
+                >
+                    Eliminar ahora
+                </button>
+                <button 
+                    type="button" 
+                    onclick="this.closest('dialog').close()" 
+                    class="w-full py-3 text-brand-dark/40 font-bold hover:text-brand-deep transition-colors text-xs uppercase tracking-widest"
+                >
+                    Cancelar acción
+                </button>
+            </div>
+        </div>
+    </div>
+</dialog>

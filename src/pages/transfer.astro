@@ -9,7 +9,7 @@ const totalRepostajes = await db.select({ count: sql`count(*)` }).from(Repostaje
 
 const stats = [
 { label: 'Clientes', value: totalClientes[0].count, icon: '👥' },
-{ label: 'Vehículos', value: totalMatriculas[0].count, icon: '🚗' },
+{ label: 'Matrículas', value: totalMatriculas[0].count, icon: '🚗' },
 { label: 'Repostajes', value: totalRepostajes[0].count, icon: '⛽' },
 ];
 
