@@ -1,69 +1,59 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
-import MatriculaForm from '../components/MatriculaForm.astro';
-import MatriculaTable from '../components/MatriculaTable.astro';
+import DynamicForm from '../components/DynamicForm.astro';
+import DynamicTable from '../components/DynamicTable.astro';
+import DynamicModal from '../components/DynamicModal.astro';
+import { db, Matricula, Cliente, eq, desc } from 'astro:db';
 
-// Componentes Auxiliares (Modales) - Asegúrate de que la ruta sea correcta
-import MatriculaEditModal from '../components/MatriculaEditModal.astro';
-import MatriculaDeleteModal from '../components/MatriculaDeleteModal.astro';
-import ClientDetailsModal from '../components/ClientDetailsModal.astro';
-
-// Base de Datos
-import { db, Cliente, Matricula, eq, desc } from 'astro:db';
-
-// 1. Datos para selectores y filtros
-const clientes = await db.select().from(Cliente).orderBy(Cliente.nombre);
-
-// 2. Datos para la tabla con el JOIN de cliente
+// 1. Datos con JOIN para ver el nombre del cliente en la tabla
 const matriculasConCliente = await db
     .select({
         id: Matricula.id,
         numero: Matricula.numero,
-        clienteId: Matricula.clienteId,
-        clienteNombre: Cliente.nombre
+        clienteNombre: Cliente.nombre,
     })
     .from(Matricula)
     .innerJoin(Cliente, eq(Matricula.clienteId, Cliente.id))
     .orderBy(desc(Matricula.id));
+
+const todosLosClientes = await db.select().from(Cliente);
+
+// 2. Configurar Columnas
+const columnasMatriculas = [
+    { key: 'numero', label: 'Matrícula', type: 'badge' },
+    { key: 'clienteNombre', label: 'Cliente' },
+    { key: 'id', label: 'Acciones', type: 'action', align: 'right' }
+];
+
+// 3. Configurar Campos Formulario
+const camposMatriculas = [
+    { name: 'numero', label: 'Matrícula', type: 'text', placeholder: '0000BBB' },
+    { 
+        name: 'clienteNombre', 
+        label: 'Asignar a Cliente', 
+        type: 'datalist', 
+        datalist: todosLosClientes.map(c => c.nombre),
+        placeholder: 'Escribe para buscar...'
+    }
+];
 ---
 
-<DashboardLayout title="Matrículas">
-    <div class="space-y-8">
-        <section class="animate-in fade-in slide-in-from-top-4 duration-500">
-            <MatriculaForm clientes={clientes} />
-        </section>
+<DashboardLayout title="Control de Flota">
+    <div class="space-y-12">
+        <DynamicForm 
+            title="Flota"
+            subtitle="Registro de Vehículo"
+            fields={camposMatriculas}
+            actionName="upsertMatricula"
+            buttonText="Vincular"
+        />
 
-        <section class="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <header class="flex items-center justify-between mb-4 px-2">
-                <div>
-                    <h3 class="text-lg font-black text-brand-deep uppercase tracking-tighter">Inventario de Flota</h3>
-                    <p class="text-[10px] font-bold text-brand-dark/40 uppercase tracking-widest">
-                        Total de unidades registradas: {matriculasConCliente.length}
-                    </p>
-                </div>
-            </header>
-            
-            <MatriculaTable matriculas={matriculasConCliente} />
-        </section>
+        <DynamicTable 
+            id="matriculas"
+            columns={columnasMatriculas}
+            data={matriculasConCliente}
+            searchPlaceholder="Buscar por matrícula o cliente..."
+        />
     </div>
-
-    <MatriculaEditModal clientes={clientes} />
-    <MatriculaDeleteModal />
-    <ClientDetailsModal />
+    <DynamicModal />
 </DashboardLayout>
-
-<style is:global>
-    .modal-fixed {
-        position: fixed;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        margin: 0;
-        border: none;
-    }
-
-    dialog::backdrop {
-        background: rgba(10, 25, 47, 0.7);
-        backdrop-filter: blur(8px);
-    }
-</style>

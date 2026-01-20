@@ -2,21 +2,44 @@
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
 import logoAsset from '../assets/icon.svg';
+import { db, Cliente, Matricula, Repostaje, sql } from 'astro:db';
+
 const { title } = Astro.props;
 const pathname = new URL(Astro.url).pathname;
 
-// Mapeamos los nombres a emojis
+// LÓGICA GLOBAL DE ESTADÍSTICAS
+const [totalClientes, totalMatriculas, totalRepostajes] = await Promise.all([
+  db.select({ count: sql`count(*)` }).from(Cliente),
+  db.select({ count: sql`count(*)` }).from(Matricula),
+  db.select({ count: sql`count(*)` }).from(Repostaje)
+]);
+
+const globalStats = [
+  { label: 'Clientes', value: totalClientes[0].count, id: 'users' },
+  { label: 'Matrículas', value: totalMatriculas[0].count, id: 'car' },
+  { label: 'Repostajes', value: totalRepostajes[0].count, id: 'fuel' },
+];
+
+const icons = {
+    home: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+    search: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+    fuel: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"/><path d="M4 22V4c0-.5.3-1 .8-1.3l2.6-1.4c.5-.3 1.2-.1 1.4.4l1.2 2.3c.2.4.1.9-.3 1.1l-1.3.7c-.4.2-.6.7-.4 1.2l4.7 9.4c.2.4.7.6 1.2.4l1.3-.7c.4-.2.9-.1 1.1.3l1.2 2.3c.3.5.1 1.2-.4 1.4l-2.6 1.4c-.5.3-.8.8-.8 1.3V22"/><path d="M7 15h4"/></svg>`,
+    users: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    car: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
+    transfer: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></svg>`
+};
+
 const menuItems = [
-  { name: 'Inicio', href: '/', icon: '🏠' },
-  { name: 'Consultas', href: '/consultas', icon: '🔍' },
-  { name: 'Repostajes', href: '/repostajes', icon: '⛽' },
-  { name: 'Clientes', href: '/clientes', icon: '👥' },
-  { name: 'Matrículas', href: '/matriculas', icon: '🚗' },
-  { name: 'Importar/Exportar', href: '/transfer', icon: '🔄' },
+  { name: 'Inicio', href: '/', icon: icons.home },
+  { name: 'Consultas', href: '/consultas', icon: icons.search },
+  { name: 'Repostajes', href: '/repostajes', icon: icons.fuel },
+  { name: 'Clientes', href: '/clientes', icon: icons.users },
+  { name: 'Matrículas', href: '/matriculas', icon: icons.car },
+  { name: 'Administración', href: '/transfer', icon: icons.transfer },
 ];
 
 const currentPage = menuItems.find(item => item.name === title);
-const PageEmoji = currentPage?.icon || '👥';
+const PageIcon = currentPage?.icon || icons.users;
 ---
 
 <html lang="es">
@@ -27,59 +50,78 @@ const PageEmoji = currentPage?.icon || '👥';
     <title>{title} | Routex</title>
     <ClientRouter />
 </head>
-<body class="bg-white flex h-screen overflow-hidden">
-    <aside class="w-64 bg-surface border-r border-brand-light flex flex-col">
-        <div class="p-6 flex items-center gap-3 border-b border-brand-light">
-            <img 
-                src={logoAsset.src} 
-                alt="Routex Logo" 
-                class="object-contain" 
-                width="50" 
-            />
-            <h1 class="text-xl font-black text-brand-deep tracking-tight">ROUTEX</h1>
+<body class="bg-[#F8FAFC] flex h-screen overflow-hidden font-sans text-slate-600">
+    <aside class="w-72 bg-white border-r border-slate-100 flex flex-col shadow-[20px_0_40px_rgba(0,0,0,0.01)]">
+        <div class="p-8 flex items-center gap-4 border-b border-slate-50">
+            <div class="p-2 bg-brand/5 rounded-2xl border border-brand/10">
+                <img src={logoAsset.src} alt="Logo" class="w-8 h-8 object-contain" />
+            </div>
+            <h1 class="text-xl font-black text-slate-800 tracking-tighter italic">ROUTEX<span class="text-brand">.</span></h1>
         </div>
 
-        <nav class="flex-1 p-4 space-y-1">
-        {menuItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            
-            return (
-                <a
-                href={item.href}
-                class={`flex items-center gap-3 px-4 py-3 font-medium rounded-xl transition-all ${
-                    isActive 
-                    ? 'bg-brand text-white shadow-md shadow-brand/20' 
-                    : 'text-brand-dark hover:bg-brand-light hover:text-brand'
-                }`}
-                >
-                <span class="text-xl">{item.icon}</span>
-                <span>{item.name}</span>
-                </a>
-            )
-        })}
+        <nav class="flex-1 p-6 space-y-3">
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 ml-4">Menú Principal</p>
+            {menuItems.map((item) => {
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                return (
+                    <a href={item.href} class={`group flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 ${isActive ? 'bg-brand text-white shadow-xl shadow-brand/20' : 'text-slate-500 hover:bg-slate-50 hover:text-brand'}`}>
+                        <span class={`flex items-center justify-center transition-transform duration-300 group-hover:scale-125 ${isActive ? 'text-white' : 'text-brand'}`} set:html={item.icon} />
+                        <span class="text-[11px] font-black uppercase tracking-widest transition-transform duration-300 group-hover:translate-x-1">{item.name}</span>
+                    </a>
+                )
+            })}
         </nav>
 
-        <div class="p-4 border-t border-brand-light">
-            <div class="flex items-center gap-2 text-xs text-brand-dark/60 font-medium px-4 italic">
-                <span>by David Román | v1.0.0</span>
+        <div class="p-8">
+            <div class="bg-slate-50 rounded-3xl p-5 border border-slate-100 relative overflow-hidden group">
+                <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-brand/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest relative z-10">Desarrollado por</p>
+                <p class="text-xs font-black text-slate-800 tracking-tight relative z-10">David Román <span class="text-brand">v1.0.0</span></p>
             </div>
         </div>
     </aside>
 
-    <main class="flex-1 overflow-y-auto p-8">
-        <header class="mb-10 flex items-center gap-4">
-            <div class="p-3 bg-brand-light rounded-2xl text-3xl shadow-sm">
-                {PageEmoji}
+    <main class="flex-1 overflow-y-auto bg-[#F8FAFC]">
+        <header class="sticky top-0 z-30 bg-[#F8FAFC]/80 backdrop-blur-md px-12 py-10 flex items-center justify-between gap-8">
+            <div class="flex items-center gap-6">
+                <div class="w-16 h-16 flex items-center justify-center bg-white text-brand rounded-[2rem] shadow-sm border border-slate-100 transition-transform hover:rotate-3" set:html={PageIcon} />
+                <div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tighter">{title}</h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Sistema / {title}</p>
+                    </div>
+                </div>
             </div>
-            
-            <div>
-                <h2 class="text-3xl font-bold text-brand-deep leading-none">{title}</h2>
-                <p class="text-brand-dark/60 text-sm mt-1">Gestión de {title.toLowerCase()} en el sistema</p>
+
+            <div class="flex items-center gap-4">
+                <div class="hidden xl:flex items-center bg-white border border-slate-100 rounded-2xl p-1 shadow-sm">
+                    {globalStats.map((stat, index) => (
+                        <div class="flex items-center">
+                            <div class="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 rounded-xl transition-colors cursor-default">
+                                <span class="text-brand opacity-80" set:html={icons[stat.id]} />
+                                <div class="flex flex-col">
+                                    <span class="text-[8px] font-black uppercase tracking-widest text-slate-400 leading-none">{stat.label}</span>
+                                    <span class="text-xs font-black text-slate-900 mt-1 leading-none">{stat.value}</span>
+                                </div>
+                            </div>
+                            {index < globalStats.length - 1 && (
+                                <div class="w-[1px] h-5 bg-slate-100"></div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                <div class="px-5 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
+                    {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </div>
             </div>
         </header>
         
-        <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <slot />
+        <div class="px-12 pb-12">
+            <div class="animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                <slot />
+            </div>
         </div>
     </main>
 </body>

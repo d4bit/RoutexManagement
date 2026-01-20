@@ -137,4 +137,57 @@ export const server = {
             return { success: true };
         },
     }),
+
+    //** * ==========================================
+    // SECCIÓN: REPOSTAJES
+    // ========================================== */
+
+    // Crear RepostajecreateRepostaje: defineAction({
+    createRepostaje: defineAction({
+        accept: 'form',
+        input: z.object({
+        fecha: z.string(),
+        numeroOperacion: z.string().optional(),
+        clienteNombre: z.string(),
+        cantidad: z.string().transform(Number),
+        importe: z.string().transform(Number),
+        matriculaNumero: z.string(),
+        comentarios: z.string().optional(),
+        }),
+        handler: async (input) => {
+        try {
+            // 1. Buscar el ID del Cliente por su nombre
+            const [cliente] = await db
+            .select()
+            .from(Cliente)
+            .where(eq(Cliente.nombre, input.clienteNombre));
+
+            if (!cliente) throw new Error('Cliente no encontrado');
+
+            // 2. Buscar el ID de la Matrícula por su número
+            const [matricula] = await db
+            .select()
+            .from(Matricula)
+            .where(eq(Matricula.numero, input.matriculaNumero));
+
+            if (!matricula) throw new Error('Matrícula no encontrada');
+
+            // 3. Insertar el repostaje con los IDs encontrados
+            await db.insert(Repostaje).values({
+            fecha: new Date(input.fecha),
+            numeroOperacion: input.numeroOperacion ? Number(input.numeroOperacion) : null,
+            importe: input.importe,
+            cantidad: input.cantidad,
+            comentarios: input.comentarios || '',
+            clienteId: cliente.id,
+            matriculaId: matricula.id,
+            });
+
+            return { success: true };
+        } catch (e: any) {
+            console.error(e);
+            throw new Error(e.message || 'Error al guardar el repostaje');
+        }
+        },
+    }),
 };

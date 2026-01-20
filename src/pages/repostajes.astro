@@ -1,13 +1,92 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
+import DynamicForm from '../components/DynamicForm.astro';
+import DynamicTable from '../components/DynamicTable.astro';
+import { db, Cliente, Matricula, Repostaje, eq, desc } from 'astro:db';
+import DynamicModal from '../components/DynamicModal.astro';
+
+// 1. Datos base
+const clientesData = await db.select().from(Cliente);
+const todasMatriculas = await db.select().from(Matricula);
+
+// 2. Configuración Relacional (Formulario)
+const configRelacional = clientesData.map(c => ({
+    nombre: c.nombre,
+    observaciones: c.observaciones || '',
+    matriculas: todasMatriculas.filter(m => m.clienteId === c.id).map(m => m.numero)
+}));
+
+// 3. Consulta para la Tabla + Enriquecimiento para búsqueda por MES
+const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+const rawRepostajes = await db
+    .select({
+        id: Repostaje.id,
+        fecha: Repostaje.fecha,
+        numeroOperacion: Repostaje.numeroOperacion,
+        importe: Repostaje.importe,
+        cantidad: Repostaje.cantidad,
+        comentarios: Repostaje.comentarios,
+        clienteNombre: Cliente.nombre,
+        clienteObservaciones: Cliente.observaciones,
+        matriculaNumero: Matricula.numero
+    })
+    .from(Repostaje)
+    .innerJoin(Cliente, eq(Repostaje.clienteId, Cliente.id))
+    .innerJoin(Matricula, eq(Repostaje.matriculaId, Matricula.id))
+    .orderBy(desc(Repostaje.fecha));
+
+const columns = [
+    { key: 'fecha', label: 'Fecha' },
+    { key: 'numeroOperacion', label: 'Nº Op' },
+    { key: 'clienteNombre', label: 'Cliente' },
+    { key: 'cantidad', label: 'Litros', align: 'right' },
+    { key: 'importe', label: 'Importe', type: 'currency', align: 'right' },
+    { key: 'matriculaNumero', label: 'Matrícula', type: 'badge' },
+    { key: 'clienteObservaciones', label: 'Observaciones' },
+    { key: 'comentarios', label: 'Comentarios' },
+    { key: 'id', label: 'Acciones', type: 'action', align: 'right' }
+];
+
+// Datos con el mes para búsqueda
+const repostajesConMes = rawRepostajes.map(r => ({
+    ...r,
+    mesNombre: meses[new Date(r.fecha).getMonth()] 
+}));
+
+// 5. Configuración Campos Formulario (Orden solicitado)
+const hoy = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+
+const fields = [
+    { name: 'fecha', label: 'Fecha', type: 'text', value: hoy, placeholder: 'DD/MM' },
+    { name: 'numeroOperacion', label: 'Nº Operación', type: 'number', placeholder: 'Nº Operación', required: false },
+    { name: 'clienteNombre', label: 'Cliente', type: 'datalist', datalist: clientesData.map(c => c.nombre), placeholder: 'Buscar...' },
+    { name: 'cantidad', label: 'Litros', type: 'number', placeholder: '0.00' },
+    { name: 'importe', label: 'Importe (€)', type: 'number', placeholder: '0.00' },
+    { name: 'matriculaNumero', label: 'Matrícula', type: 'datalist', datalist: [], placeholder: 'Elige cliente' },
+    { name: 'clienteObservaciones', label: 'Observaciones', type: 'text', readonly: true },
+    { name: 'comentarios', label: 'Comentarios', type: 'text', placeholder: 'Opcional', required: false }
+];
 ---
 
 <DashboardLayout title="Repostajes">
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-	<div class="bg-surface p-6 rounded-2xl border border-brand-light">
-	<p class="text-brand-dark font-bold">Último repostaje</p>
-	<p class="text-4xl font-bold text-brand mt-2">45.20L</p>
-	<p class="text-sm text-brand-deep/60">Matrícula: 1234-BBB</p>
-	</div>
-</div>
+    <div class="space-y-10">
+        <DynamicForm 
+            title="Operaciones" 
+            subtitle="Nueva Carga" 
+            fields={fields} 
+            actionName="createRepostaje" 
+            buttonText="Guardar" 
+            relationalData={configRelacional} 
+        />
+
+	<DynamicTable 
+        id="repostajes" 
+        columns={columns} 
+        data={repostajesConMes} 
+        defaultPageSize={50}
+        searchPlaceholder="Buscar por cliente, matrícula o mes..." 
+    />
+    </div>
+	<DynamicModal
 </DashboardLayout>

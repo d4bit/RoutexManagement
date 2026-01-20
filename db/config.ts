@@ -26,6 +26,7 @@ const Repostaje = defineTable({
     importe: column.number(), // Ejemplo: 50.25
     cantidad: column.number(), // Ejemplo: 40.5 (litros)
     comentarios: column.text({ optional: true }),
+    numeroOperacion: column.number({ optional: true }),
     
     // Relaciones
     clienteId: column.number({ references: () => Cliente.columns.id }),

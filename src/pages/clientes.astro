@@ -1,92 +1,43 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
-import ClientForm from '../components/ClientForm.astro';
-import ClientTable from '../components/ClientTable.astro';
-import ClientEditModal from '../components/ClientEditModal.astro';
-import ClientDetailsModal from '../components/ClientDetailsModal.astro';
-import ClientDeleteModal from '../components/ClientDeleteModal.astro';
+import DynamicForm from '../components/DynamicForm.astro';
+import DynamicModal from '../components/DynamicModal.astro';
+import DynamicTable from '../components/DynamicTable.astro';
 import { db, Cliente, desc } from 'astro:db';
 
+// 1. Obtener datos
 const clientes = await db.select().from(Cliente).orderBy(desc(Cliente.id));
+
+// 2. Configurar Columnas
+const columnasClientes = [
+    { key: 'nombre', label: 'Razón Social' },
+    { key: 'observaciones', label: 'Observaciones / Info' },
+    { key: 'id', label: 'Gestión', type: 'action', align: 'right' }
+];
+
+// 3. Configurar Campos Formulario (por si no lo tenías)
+const camposClientes = [
+    { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Ej: Logística Sur' },
+    { name: 'observaciones', label: 'Observaciones', type: 'text', placeholder: 'Opcional', required: false }
+];
 ---
 
 <DashboardLayout title="Gestión de Clientes">
-    <div class="space-y-6">
-        <ClientForm />
-        <ClientTable initialClients={clientes} />
+    <div class="space-y-12">
+        <DynamicForm 
+            title="Directorio"
+            subtitle="Alta de Cliente"
+            fields={camposClientes}
+            actionName="upsertClient"
+            buttonText="Añadir"
+        />
+
+        <DynamicTable 
+            id="clientes"
+            columns={columnasClientes}
+            data={clientes}
+            searchPlaceholder="Buscar cliente por nombre o CIF..."
+        />
     </div>
-
-    <ClientEditModal />
-    <ClientDetailsModal />
-    <ClientDeleteModal />
+    <DynamicModal />
 </DashboardLayout>
-
-<style is:global>
-    .modal-fixed {
-        position: fixed;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        margin: 0;
-    }
-
-    dialog::backdrop {
-        background: rgba(10, 25, 47, 0.6);
-        backdrop-filter: blur(4px);
-    }
-</style>
-
-<script>
-    import { actions } from 'astro:actions';
-    
-    function initModals() {
-        const editModal = document.getElementById('edit-modal') as HTMLDialogElement;
-        const infoModal = document.getElementById('info-modal') as HTMLDialogElement;
-        const deleteModal = document.getElementById('delete-modal') as HTMLDialogElement;
-        const editForm = document.getElementById('edit-form') as HTMLFormElement;
-        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-
-        let clientIdToDelete: number | null = null;
-
-        window.addEventListener('open-edit-modal', (e: any) => {
-            (document.getElementById('m-id') as HTMLInputElement).value = e.detail.id;
-            (document.getElementById('m-nombre') as HTMLInputElement).value = e.detail.nombre;
-            (document.getElementById('m-obs') as HTMLTextAreaElement).value = e.detail.observaciones || '';
-            editModal.showModal();
-        });
-
-        window.addEventListener('open-info-modal', (e: any) => {
-            const title = document.getElementById('info-title');
-            if (title) title.innerText = e.detail.nombre;
-            infoModal.showModal();
-        });
-
-        window.addEventListener('open-delete-modal', (e: any) => {
-            clientIdToDelete = Number(e.detail.id);
-            const nameSpan = document.getElementById('delete-client-name');
-            if (nameSpan) nameSpan.innerText = e.detail.nombre;
-            deleteModal.showModal();
-        });
-
-        confirmDeleteBtn?.addEventListener('click', async () => {
-            if (clientIdToDelete) {
-                const { error } = await actions.deleteClient({ id: clientIdToDelete });
-                if (!error) window.location.reload();
-            }
-        });
-
-        editForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const { error } = await actions.upsertClient(new FormData(editForm));
-            if (!error) window.location.reload();
-        });
-
-        [editModal, infoModal, deleteModal].forEach(m => {
-            m?.addEventListener('click', (e) => {
-                if (e.target === m) m.close();
-            });
-        });
-    }
-
-    document.addEventListener('astro:page-load', initModals);
-</script>

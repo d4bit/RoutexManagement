@@ -1,0 +1,107 @@
+---
+// DynamicModal.astro
+---
+<div id="dynamic-modal" class="fixed inset-0 z-[100] hidden">
+    <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-md" id="modal-overlay"></div>
+
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-lg rounded-[2.5rem] bg-white shadow-2xl overflow-hidden border border-slate-100">
+            <div class="bg-slate-50 px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Panel de Gestión</h3>
+                    <p id="modal-subtitle" class="text-xl font-black text-slate-800 tracking-tight">Cargando...</p>
+                </div>
+                <button type="button" id="close-modal" class="text-slate-400 hover:text-slate-900 text-xl font-bold p-2">✕</button>
+            </div>
+
+            <form id="modal-form" class="p-8 space-y-5">
+                <input type="hidden" name="id" id="modal-id" />
+                <input type="hidden" id="modal-table-type" />
+
+                <div id="modal-fields" class="space-y-4">
+                    </div>
+
+                <div class="flex flex-col gap-3 pt-6">
+                    <button type="submit" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all uppercase text-[10px] tracking-widest">
+                        💾 Guardar Cambios
+                    </button>
+                    <button type="button" id="delete-btn" class="w-full bg-red-50 text-red-500 font-black py-4 rounded-2xl hover:bg-red-100 transition-all uppercase text-[10px] tracking-widest border border-red-100">
+                        🗑️ Eliminar Registro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    import { actions } from 'astro:actions';
+
+    const modal = document.getElementById('dynamic-modal');
+    const form = document.getElementById('modal-form') as HTMLFormElement;
+
+    // ABRIR MODAL (Función Global)
+    window.openEditModal = (tableId, data) => {
+        const fields = document.getElementById('modal-fields');
+        (document.getElementById('modal-subtitle')).innerText = `Editar ${tableId.split('-')[0].toUpperCase()}`;
+        (document.getElementById('modal-id') as HTMLInputElement).value = data.id;
+        (document.getElementById('modal-table-type') as HTMLInputElement).value = tableId;
+
+        fields.innerHTML = '';
+        const exclude = ['id', 'clienteId', 'matriculaId', 'mesIndex'];
+
+        Object.keys(data).forEach(key => {
+            if (exclude.includes(key)) return;
+            const val = data[key];
+            const isDate = key.toLowerCase().includes('fecha');
+
+            fields.innerHTML += `
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2">${key}</label>
+                    <input name="${key}" 
+                        type="${isDate ? 'date' : (typeof val === 'number' ? 'number' : 'text')}"
+                        value="${isDate && val ? new Date(val).toISOString().split('T')[0] : (val ?? '')}"
+                        class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3 font-bold text-slate-700 outline-none focus:ring-4 focus:ring-slate-100 transition-all"
+                    />
+                </div>
+            `;
+        });
+        modal.classList.remove('hidden');
+    };
+
+    // CERRAR
+    const close = () => modal.classList.add('hidden');
+    document.getElementById('close-modal').onclick = close;
+    document.getElementById('modal-overlay').onclick = close;
+
+    // ACCIÓN: GUARDAR (UPDATE)
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const type = (document.getElementById('modal-table-type') as HTMLInputElement).value;
+
+        let res;
+        if (type === 'clientes-table') res = await actions.upsertClient(fd);
+        if (type === 'matriculas-table') res = await actions.upsertMatricula(fd);
+        if (type === 'consultas-master') res = await actions.createRepostaje(fd); // Tu action maneja el update si hay ID
+
+        if (!res?.error) window.location.reload();
+        else alert("Error al guardar: " + res.error.message);
+    };
+
+    // ACCIÓN: BORRAR (DELETE)
+    document.getElementById('delete-btn').onclick = async () => {
+        if (!confirm("¿Estás seguro de que quieres borrar este registro?")) return;
+        
+        const id = Number((document.getElementById('modal-id') as HTMLInputElement).value);
+        const type = (document.getElementById('modal-table-type') as HTMLInputElement).value;
+
+        let res;
+        if (type === 'clientes-table') res = await actions.deleteClient({ id });
+        if (type === 'matriculas-table') res = await actions.deleteMatricula({ id });
+        // Para repostaje (consultas-master) necesitarás añadir deleteRepostaje en tus actions
+
+        if (!res?.error) window.location.reload();
+        else alert("Error al borrar: " + res.error.message);
+    };
+</script>
