@@ -1,17 +1,43 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
-import { db, Cliente } from 'astro:db';
+import DynamicForm from '../components/DynamicForm.astro';
+import DynamicModal from '../components/DynamicModal.astro';
+import DynamicTable from '../components/DynamicTable.astro';
+import { db, Cliente, desc } from 'astro:db';
 
-const clientes = await db.select().from(Cliente);
+// 1. Obtener datos
+const clientes = await db.select().from(Cliente).orderBy(desc(Cliente.id));
+
+// 2. Configurar Columnas
+const columnasClientes = [
+    { key: 'nombre', label: 'Razón Social' },
+    { key: 'observaciones', label: 'Observaciones / Info' },
+    { key: 'id', label: 'Gestión', type: 'action', align: 'right' }
+];
+
+// 3. Configurar Campos Formulario (por si no lo tenías)
+const camposClientes = [
+    { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Ej: Logística Sur' },
+    { name: 'observaciones', label: 'Observaciones', type: 'text', placeholder: 'Opcional', required: false }
+];
 ---
 
-<DashboardLayout title="Inicio">
-  <div class="grid gap-4">
-    {clientes.map(cliente => (
-      <div class="p-4 border border-brand-light rounded-xl bg-surface shadow-sm">
-        <h3 class="font-bold text-brand-deep">{cliente.nombre}</h3>
-        <p class="text-sm text-brand-dark/60">{cliente.observaciones}</p>
-      </div>
-    ))}
-  </div>
+<DashboardLayout title="Gestión de Clientes">
+    <div class="space-y-12">
+        <DynamicForm 
+            title="Directorio"
+            subtitle="Alta de Cliente"
+            fields={camposClientes}
+            actionName="upsertClient"
+            buttonText="Añadir"
+        />
+
+        <DynamicTable 
+            id="clientes"
+            columns={columnasClientes}
+            data={clientes}
+            searchPlaceholder="Buscar cliente por nombre o CIF..."
+        />
+    </div>
+    <DynamicModal />
 </DashboardLayout>

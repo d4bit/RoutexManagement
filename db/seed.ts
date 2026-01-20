@@ -9,9 +9,9 @@ const clientes = await db.insert(Cliente).values([
 
 // 2. Creamos matrículas asociadas
 await db.insert(Matricula).values([
-	{ placa: '1234-BBB', clienteId: clientes[0].id },
-	{ placa: '5678-CCC', clienteId: clientes[0].id },
-	{ placa: '9999-ZZZ', clienteId: clientes[1].id },
+	{ numero: '1234-BBB', clienteId: clientes[0].id },
+	{ numero: '5678-CCC', clienteId: clientes[0].id },
+	{ numero: '9999-ZZZ', clienteId: clientes[1].id },
 ]);
 
 console.log('Seed completado con éxito 🚀');

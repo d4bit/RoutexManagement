@@ -1,0 +1,167 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { db, Cliente, Matricula, Repostaje } from 'astro:db';
+
+const tables = [
+  { id: 'all', name: 'Todas las tablas' },
+  { id: 'Cliente', name: 'Clientes' },
+  { id: 'Matricula', name: 'Matrículas' },
+  { id: 'Repostaje', name: 'Repostajes' },
+];
+---
+
+<DashboardLayout title="Administración de Datos">
+    <div id="db-data" 
+        data-json={JSON.stringify({
+        Cliente: await db.select().from(Cliente),
+        Matricula: await db.select().from(Matricula),
+        Repostaje: await db.select().from(Repostaje),
+        })} 
+        hidden>
+    </div>
+
+    <div class="space-y-10">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section class="bg-white p-10 rounded-[2.5rem] border border-green-50 shadow-[0_10px_40px_rgba(16,185,129,0.03)] flex flex-col">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 flex items-center justify-center bg-green-50 text-green-600 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-green-800/40">Importar Backup</h3>
+                </div>
+                
+                <div id="drop-zone" class="flex-1 border-2 border-dashed border-green-100 rounded-3xl p-10 flex flex-col items-center justify-center hover:border-green-300 hover:bg-green-50/30 transition-all cursor-pointer group">
+                    <div class="p-5 bg-green-50 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-green-500/50"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14.5 2 14.5 7.5 20 7.5"/></svg>
+                    </div>
+                    <p id="file-name" class="text-sm font-bold text-green-700/50 tracking-tight">Cargar archivo .sql</p>
+                    <input type="file" class="hidden" id="importFile" accept=".sql" />
+                </div>
+
+                <div id="validation-box" class="mt-6 p-5 bg-green-50/50 border border-green-100 rounded-2xl hidden animate-in fade-in zoom-in duration-300">
+                    <p class="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Análisis:</p>
+                    <p id="validation-msg" class="text-xs font-bold text-green-800 italic">Analizando...</p>
+                </div>
+                
+                <button id="btn-import-execute" type="button" class="w-full mt-8 py-5 bg-green-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-green-700 hover:shadow-lg hover:shadow-green-200 transition-all shadow-sm">
+                    Ejecutar Importación
+                </button>
+            </section>
+
+            <section class="bg-white p-10 rounded-[2.5rem] border border-green-50 shadow-[0_10px_40px_rgba(16,185,129,0.03)]">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 flex items-center justify-center bg-green-50 text-green-600 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </div>
+                    <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-green-800/40">Exportar Datos</h3>
+                </div>
+
+                <div class="space-y-8">
+                    <div>
+                        <label class="block text-[10px] font-black text-green-800/40 uppercase tracking-widest mb-4">1. Selección de datos</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            {tables.map((table) => (
+                                <label class="flex items-center gap-3 p-4 border border-green-50 rounded-2xl cursor-pointer hover:bg-green-50/50 transition-all group has-[:checked]:border-green-200 has-[:checked]:bg-green-50">
+                                    <input type="radio" name="tableSelect" value={table.id} class="w-4 h-4 accent-green-600" checked={table.id === 'all'} />
+                                    <span class="text-xs font-bold text-green-800/70 group-hover:text-green-700 transition-colors">{table.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4" id="format-selector">
+                        <button type="button" data-format="xlsx" class="format-btn flex-1 py-4 border border-green-600 bg-green-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-100 transition-all">EXCEL</button>
+                        <button type="button" data-format="sql" class="format-btn flex-1 py-4 border border-green-100 bg-white text-green-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-green-300 transition-all">SQL</button>
+                    </div>
+
+                    <button id="btn-export" type="button" class="w-full py-5 bg-green-900 text-green-100 text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-green-950 hover:shadow-xl transition-all">
+                        Generar Descarga
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+</DashboardLayout>
+
+<script>
+import * as XLSX from 'xlsx';
+
+function initAdmin() {
+    const exportBtn = document.getElementById('btn-export');
+    const fileInput = document.getElementById('importFile') as HTMLInputElement;
+    const dropZone = document.getElementById('drop-zone');
+    const fileNameDisplay = document.getElementById('file-name');
+    const validationBox = document.getElementById('validation-box');
+    const validationMsg = document.getElementById('validation-msg');
+
+    if (!exportBtn) return;
+
+    // Lógica de carga de archivo
+    fileInput?.addEventListener('change', async () => {
+        const file = fileInput.files?.[0];
+        if (file) {
+            fileNameDisplay!.textContent = file.name;
+            validationBox?.classList.remove('hidden');
+            const text = await file.text();
+            const matches = (text.match(/INSERT INTO/g) || []).length;
+            validationMsg!.textContent = `Listo: ${matches} registros encontrados.`;
+        }
+    });
+
+    // Lógica de exportación
+    exportBtn.addEventListener('click', () => {
+        const dataContainer = document.getElementById('db-data');
+        const allData = JSON.parse(dataContainer?.getAttribute('data-json') || '{}');
+        const tableKey = (document.querySelector('input[name="tableSelect"]:checked') as HTMLInputElement).value;
+        const formatBtn = document.querySelector('.format-btn.bg-green-600') as HTMLElement;
+        const format = formatBtn.dataset.format || 'xlsx';
+
+        if (format === 'sql') exportToSQL(allData, tableKey);
+        else exportToExcel(allData, tableKey);
+    });
+
+    function exportToSQL(allData, tableKey) {
+        let sqlText = `-- Routex Dump\n`;
+        const tables = tableKey === 'all' ? Object.keys(allData) : [tableKey];
+        tables.forEach(t => {
+            allData[t].forEach(row => {
+                const cols = Object.keys(row).join(", ");
+                const vals = Object.values(row).map(v => 
+                    v === null ? 'NULL' : (typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v)
+                ).join(", ");
+                sqlText += `INSERT INTO ${t} (${cols}) VALUES (${vals});\n`;
+            });
+        });
+        const blob = new Blob([sqlText], { type: 'text/sql' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `backup_${tableKey}.sql`; a.click();
+    }
+
+    function exportToExcel(allData, tableKey) {
+        const wb = XLSX.utils.book_new();
+        const tables = tableKey === 'all' ? Object.keys(allData) : [tableKey];
+        tables.forEach(t => {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allData[t]), t);
+        });
+        XLSX.writeFile(wb, `routex_export_${tableKey}.xlsx`);
+    }
+
+    // Toggle de botones de formato
+    const formatButtons = document.querySelectorAll('.format-btn');
+    formatButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            formatButtons.forEach(b => {
+                b.classList.remove('bg-green-600', 'text-white', 'border-green-600', 'shadow-lg', 'shadow-green-100');
+                b.classList.add('border-green-100', 'bg-white', 'text-green-400');
+            });
+            btn.classList.remove('border-green-100', 'bg-white', 'text-green-400');
+            btn.classList.add('bg-green-600', 'text-white', 'border-green-600', 'shadow-lg', 'shadow-green-100');
+        });
+    });
+
+    dropZone?.addEventListener('click', () => fileInput?.click());
+}
+
+initAdmin();
+document.addEventListener('astro:after-navigation', initAdmin);
+</script>

@@ -3,6 +3,8 @@ import { defineConfig } from 'astro/config';
 import db from '@astrojs/db';
 import tailwindcss from '@tailwindcss/vite';
 
+import vercel from '@astrojs/vercel';
+
 // https://astro.build/config
 export default defineConfig({
   // 1. Integraciones de Astro
@@ -26,5 +28,7 @@ export default defineConfig({
   prefetch: {
     prefetchAll: true, // Precarga las páginas cuando pasas el ratón por el menú
     defaultStrategy: 'hover'
-  }
+  },
+
+  adapter: vercel()
 });
